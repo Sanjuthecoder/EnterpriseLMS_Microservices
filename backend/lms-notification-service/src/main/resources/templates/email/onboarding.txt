@@ -1,0 +1,12 @@
+Hello {{username}},
+
+Your {{roleName}} account has been successfully created and approved.
+Here are your temporary login credentials:
+
+Email: {{email}}
+Password: {{password}}
+
+Please log in and change your password immediately.
+
+Best regards,
+Enterprise LMS Team

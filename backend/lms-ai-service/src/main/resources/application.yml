@@ -1,0 +1,57 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: lms-ai-service
+  data:
+    mongodb:
+      # Uses the SAME global Atlas cluster as telemetry and payment services.
+      # AI collections are prefixed with svc_ai_ to avoid any collision with
+      # existing svc_telemetry_* and svc_payment_* collections.
+      uri: ${DB_MONGO_URI:mongodb+srv://sanjaysharmajr07_db_user:2qhwUbhjsWNykJK4@enterprisecluster.gtynvaw.mongodb.net/enterprise_db?appName=enterpriseCluster}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ai-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+
+# Google Gemini API credentials (injected via .env / Docker secrets)
+gemini:
+  api:
+    key: ${GEMINI_API_KEY}
+    base-url: https://generativelanguage.googleapis.com/v1beta
+    model: gemini-flash-latest
+
+
+# Inter-service URLs (service-discovery names used in Docker, localhost for local dev)
+app:
+  services:
+    course-service-url: ${COURSE_SERVICE_URL:http://lms-course-service:8083}
+    telemetry-service-url: ${TELEMETRY_SERVICE_URL:http://lms-telemetry-service:8082}
+
+logging:
+  level:
+    root: WARN
+    com.edtech.lms.ai: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always

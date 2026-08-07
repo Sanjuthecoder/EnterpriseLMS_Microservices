@@ -1,0 +1,13 @@
+Hello {{username}},
+
+Congratulations! Your company has successfully upgraded to the Enterprise LMS Premium Tier.
+
+You now have exclusive access to our premium features, including:
+- AI-Based Personalized Learning Experience
+- Learning Record Store (LRS) Analytics
+- WebRTC Live Video Interactions
+
+Thank you for choosing Enterprise LMS. If you have any questions, our support team is ready to help.
+
+Best regards,
+Enterprise LMS Team

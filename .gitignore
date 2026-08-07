@@ -1,0 +1,51 @@
+# Node dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build output
+dist/
+build/
+out/
+target/
+
+# Java / Spring Boot
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/
+mvnw
+mvnw.cmd
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+
+# IDE and OS files
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Environment Variables and Secrets
+.env
+.env.*
+*.local
+secrets/
+certs/
+*.pem
+*.key
+*.p12
+
+# Coverage and testing
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log

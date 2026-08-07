@@ -1,0 +1,208 @@
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # KRaft Settings
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # Listeners
+      KAFKA_LISTENERS: PLAINTEXT://:29092,CONTROLLER://:9093,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - lms-network
+
+  eureka-server:
+    build: 
+      context: ./backend/lms-eureka-server
+    container_name: lms-eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_INSTANCE_PREFERIPADDRESS=true
+    networks:
+      - lms-network
+
+  api-gateway:
+    build:
+      context: ./backend/lms-api-gateway
+    container_name: lms-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+    networks:
+      - lms-network
+
+  identity-service:
+    build:
+      context: ./backend/lms-identity-service
+    container_name: lms-identity-service
+    ports:
+      - "8084:8084"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - eureka-server
+      - kafka
+    networks:
+      - lms-network
+
+  course-service:
+    build:
+      context: ./backend/lms-course-service
+    container_name: lms-course-service
+    ports:
+      - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - eureka-server
+      - kafka
+    volumes:
+      - ./backend/lms-course-service/uploads:/app/uploads
+    networks:
+      - lms-network
+
+  communication-service:
+    build:
+      context: ./backend/lms-communication-service
+    container_name: lms-communication-service
+    ports:
+      - "8085:8085"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+    networks:
+      - lms-network
+
+  telemetry-service:
+    build:
+      context: ./backend/lms-telemetry-service
+    container_name: lms-telemetry-service
+    ports:
+      - "8082:8082"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - eureka-server
+      - kafka
+    networks:
+      - lms-network
+
+  notification-service:
+    build:
+      context: ./backend/lms-notification-service
+      dockerfile: Dockerfile
+    container_name: lms-notification-service
+    ports:
+      - "8086:8086"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://lms-eureka-server:8761/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - MAIL_HOST=mailpit
+      - MAIL_PORT=1025
+      - MAIL_USERNAME=
+      - MAIL_PASSWORD=
+    depends_on:
+      - eureka-server
+      - kafka
+    networks:
+      - lms-network
+
+  payment-service:
+    build:
+      context: ./backend/lms-payment-service
+    container_name: lms-payment-service
+    ports:
+      - "8087:8087"
+    env_file:
+      - ./backend/lms-payment-service/.env
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      - eureka-server
+      - kafka
+    networks:
+      - lms-network
+
+  ai-service:
+    build:
+      context: ./backend/lms-ai-service
+      dockerfile: Dockerfile
+    container_name: lms-ai-service
+    ports:
+      - "8088:8088"
+    env_file:
+      - ./backend/lms-ai-service/.env
+    environment:
+      # env_file above provides GEMINI_API_KEY, DB_MONGO_URI, etc.
+      # These override/supplement the env_file for Docker-network-specific values
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - COURSE_SERVICE_URL=http://lms-course-service:8083
+      - TELEMETRY_SERVICE_URL=http://lms-telemetry-service:8082
+    networks:
+      - lms-network
+    depends_on:
+      - eureka-server
+      - kafka
+      - course-service
+      - telemetry-service
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: mailpit
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP
+    environment:
+      MP_MAX_MESSAGES: 5000
+    networks:
+      - lms-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: enterprise-lms-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - lms-network
+
+networks:
+  lms-network:
+    driver: bridge
+
+volumes:
+  kafka_data:

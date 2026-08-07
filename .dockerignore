@@ -1,0 +1,40 @@
+# Node dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+target/
+
+# Java / Spring Boot
+.mvn/
+mvnw
+mvnw.cmd
+.gradle/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+*.iml
+
+# Environment Variables and Secrets
+.env
+.env.*
+*.local
+secrets/
+certs/
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# README and docs
+README.md
+docs/

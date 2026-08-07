@@ -1,0 +1,68 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: lms-api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: telemetry-service
+          uri: lb://lms-telemetry-service
+          predicates:
+            - Path=/api/telemetry/**
+        - id: course-service
+          uri: lb://lms-course-service
+          predicates:
+            - Path=/api/courses/**, /api/enrollments/**, /api/employees/**, /api/super-admin/courses/**, /api/super-admin/companies/*/courses/**, /api/company-admin/courses, /api/company-admin/courses/**, /api/company-admin/enrollments, /api/company-admin/enrollments/**, /api/company-admin/employees/*/courses/**, /api/company-admin/certificates/**, /api/creator/**, /uploads/**
+        - id: identity-service
+          uri: lb://lms-identity-service
+          predicates:
+            - Path=/api/auth/**, /api/users/**, /api/company-admin/**, /api/super-admin/**
+        - id: communication-service
+          uri: lb://lms-communication-service
+          predicates:
+            - Path=/api/ws-chat/**
+        - id: ai-service
+          uri: lb://lms-ai-service
+          predicates:
+            - Path=/api/v1/ai/**
+        - id: payment-service
+          uri: lb://lms-payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+jwt:
+  secret: ${JWT_SECRET:9a4f2c8d3b7a1e6f45c8a0b3f267d8b1d4e6f3c8a9d2b5f8e3a9c8b5f6v8a3d9}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
